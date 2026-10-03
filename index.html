@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriSmart - Smart Farming Assistant</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 min-h-full flex flex-col transition-colors duration-200">
+
+    <!-- Top Header Navigation -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-brand-500 text-white rounded-xl shadow-md">
+                        <i data-lucide="sprout" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-none">AgriSmart AI</h1>
+                        <span class="text-xs text-brand-600 dark:text-brand-400 font-medium">Precision Farming Hub</span>
+                    </div>
+                </div>
+
+                <!-- Status Badges & Controls -->
+                <div class="hidden md:flex items-center space-x-4">
+                    <!-- Live Clock -->
+                    <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center space-x-1 bg-slate-100 dark:bg-slate-700/50 px-3 py-1.5 rounded-lg">
+                        <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                        <span id="liveClock">Syncing...</span>
+                    </div>
+
+                    <!-- Farm Selector -->
+                    <div class="relative">
+                        <select id="farmSelect" class="bg-slate-100 dark:bg-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 rounded-lg px-3 py-1.5 border-0 focus:ring-2 focus:ring-brand-500">
+                            <option value="field-a">GreenValley - Sector A (Wheat)</option>
+                            <option value="field-b">GreenValley - Sector B (Maize)</option>
+                            <option value="greenhouse-1">Smart Greenhouse #1 (Tomato)</option>
+                        </select>
+                    </div>
+
+                    <!-- Sensor Link Status -->
+                    <div class="flex items-center space-x-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>Telemetry Active</span>
+                    </div>
+
+                    <!-- Theme Toggle -->
+                    <button id="themeToggle" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 transition" title="Toggle Light/Dark Theme">
+                        <i data-lucide="moon" class="w-5 h-5 dark:hidden"></i>
+                        <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="flex space-x-1 sm:space-x-4 overflow-x-auto pb-2 pt-1 no-scrollbar border-t border-slate-100 dark:border-slate-700/50">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-tab active flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-lg text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/40 whitespace-nowrap">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button onclick="switchTab('soil-advisory')" id="tab-soil-advisory" class="nav-tab flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">
+                    <i data-lucide="test-tube" class="w-4 h-4"></i>
+                    <span>Soil & Crop Advisory</span>
+                </button>
+                <button onclick="switchTab('telemetry')" id="tab-telemetry" class="nav-tab flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">
+                    <i data-lucide="cpu" class="w-4 h-4"></i>
+                    <span>IoT Telemetry</span>
+                </button>
+                <button onclick="switchTab('weather')" id="tab-weather" class="nav-tab flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">
+                    <i data-lucide="cloud-sun" class="w-4 h-4"></i>
+                    <span>Weather & Irrigation</span>
+                </button>
+                <button onclick="switchTab('diagnostic')" id="tab-diagnostic" class="nav-tab flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">
+                    <i data-lucide="scan-line" class="w-4 h-4"></i>
+                    <span>AI Pest Diagnostic</span>
+                </button>
+                <button onclick="switchTab('financials')" id="tab-financials" class="nav-tab flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">
+                    <i data-lucide="wallet" class="w-4 h-4"></i>
+                    <span>Logbook & Finances</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ================= TAB 1: DASHBOARD ================= -->
+        <section id="dashboard" class="tab-content active space-y-6">
+            <!-- Key Metrics Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <!-- Metric Card 1 -->
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Moisture</span>
+                        <i data-lucide="droplets" class="w-4 h-4 text-blue-500"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-900 dark:text-white" id="dashMoisture">42%</div>
+                    <p class="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Optimal level</p>
+                </div>
+
+                <!-- Metric Card 2 -->
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Temp</span>
+                        <i data-lucide="thermometer" class="w-4 h-4 text-amber-500"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-900 dark:text-white" id="dashTemp">26.5°C</div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Ambient field</p>
+                </div>
+
+                <!-- Metric Card 3 -->
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider">NPK Status</span>
+                        <i data-lucide="layers" class="w-4 h-4 text-emerald-500"></i>
+                    </div>
+                    <div class="text-sm font-bold text-slate-900 dark:text-white" id="dashNPK">120-45-60</div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">mg/kg (N-P-K)</p>
+                </div>
+
+                <!-- Metric Card 4 -->
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Soil pH</span>
+                        <i data-lucide="flask-conical" class="w-4 h-4 text-purple-500"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-900 dark:text-white" id="dashPH">6.5</div>
+                    <p class="text-xs text-emerald-600 dark:text-emerald-400 mt-1">Slightly acidic</p>
+                </div>
+
+                <!-- Metric Card 5 -->
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Humidity</span>
+                        <i data-lucide="wind" class="w-4 h-4 text-teal-500"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-900 dark:text-white" id="dashHumidity">68%</div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Relative humidity</p>
+                </div>
+
+                <!-- Metric Card 6 -->
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Irrigation</span>
+                        <i data-lucide="power" class="w-4 h-4 text-brand-500"></i>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span id="dashValveBadge" class="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">OFF</span>
+                        <button onclick="toggleValve()" class="text-xs text-brand-600 underline font-medium">Toggle</button>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Main solenoid valve</p>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Telemetry Quick Chart -->
+                <div class="lg:col-span-2 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-bold text-slate-900 dark:text-white">Soil Moisture & Temperature Trends</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Recorded over the last 12 hours</p>
+                        </div>
+                        <span class="text-xs bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300 px-2.5 py-1 rounded-md font-medium">Live Stream</span>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="overviewChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Farm Health Radar / Alerts -->
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-slate-900 dark:text-white">Active Farm Advisories</h3>
+                            <i data-lucide="bell" class="w-4 h-4 text-amber-500"></i>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="p-3 bg-amber-50 dark:bg-amber-950/30 border-l-4 border-amber-500 rounded-r-lg text-xs">
+                                <p class="font-semibold text-amber-900 dark:text-amber-200">Nitrogen Depletion Detected</p>
+                                <p class="text-amber-700 dark:text-amber-400 mt-0.5">Top-soil Nitrogen level is down to 120mg/kg. Top-dressing recommendation in 2 days.</p>
+                            </div>
+                            <div class="p-3 bg-blue-50 dark:bg-blue-950/30 border-l-4 border-blue-500 rounded-r-lg text-xs">
+                                <p class="font-semibold text-blue-900 dark:text-blue-200">Optimal Irrigation Window</p>
+                                <p class="text-blue-700 dark:text-blue-400 mt-0.5">Scheduled automated drip irrigation at 18:00 based on ET calculations.</p>
+                            </div>
+                            <div class="p-3 bg-emerald-50 dark:bg-emerald-950/30 border-l-4 border-emerald-500 rounded-r-lg text-xs">
+                                <p class="font-semibold text-emerald-900 dark:text-emerald-200">Crop Health Good</p>
+                                <p class="text-emerald-700 dark:text-emerald-400 mt-0.5">Overall vegetation index (NDVI) estimate is 0.82 (Healthy Canopy).</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs text-slate-500">
+                        <span>Updated: <strong id="alertLastSync">Just now</strong></span>
+                        <button onclick="switchTab('soil-advisory')" class="text-brand-600 dark:text-brand-400 font-semibold hover:underline">View Diagnostics &rarr;</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 2: SOIL & CROP ADVISORY ================= -->
+        <section id="soil-advisory" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Controls & Sliders Card -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-5">
+                    <div class="border-b border-slate-100 dark:border-slate-700 pb-3">
+                        <h3 class="font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                            <i data-lucide="sliders" class="w-5 h-5 text-brand-500"></i>
+                            <span>Soil & Field Parameters</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">Adjust parameters to simulate suitability and get crop & fertilizer recommendations.</p>
+                    </div>
+
+                    <!-- Nitrogen Slider -->
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span>Nitrogen (N): <strong id="valN" class="text-brand-600">120</strong> mg/kg</span>
+                            <span class="text-slate-400">0 - 250</span>
+                        </div>
+                        <input type="range" id="inputN" min="0" max="250" value="120" class="w-full accent-brand-500 cursor-pointer" oninput="updateCropAdvisory()">
+                    </div>
+
+                    <!-- Phosphorus Slider -->
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span>Phosphorus (P): <strong id="valP" class="text-brand-600">45</strong> mg/kg</span>
+                            <span class="text-slate-400">0 - 150</span>
+                        </div>
+                        <input type="range" id="inputP" min="0" max="150" value="45" class="w-full accent-brand-500 cursor-pointer" oninput="updateCropAdvisory()">
+                    </div>
+
+                    <!-- Potassium Slider -->
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span>Potassium (K): <strong id="valK" class="text-brand-600">60</strong> mg/kg</span>
+                            <span class="text-slate-400">0 - 200</span>
+                        </div>
+                        <input type="range" id="inputK" min="0" max="200" value="60" class="w-full accent-brand-500 cursor-pointer" oninput="updateCropAdvisory()">
+                    </div>
+
+                    <!-- pH Slider -->
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span>Soil pH: <strong id="valPH" class="text-brand-600">6.5</strong></span>
+                            <span class="text-slate-400">4.0 - 9.0</span>
+                        </div>
+                        <input type="range" id="inputPH" min="4.0" max="9.0" step="0.1" value="6.5" class="w-full accent-brand-500 cursor-pointer" oninput="updateCropAdvisory()">
+                    </div>
+
+                    <!-- Rainfall Slider -->
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span>Expected Annual Rainfall: <strong id="valRain" class="text-brand-600">800</strong> mm</span>
+                            <span class="text-slate-400">200 - 2000</span>
+                        </div>
+                        <input type="range" id="inputRain" min="200" max="2000" step="50" value="800" class="w-full accent-brand-500 cursor-pointer" oninput="updateCropAdvisory()">
+                    </div>
+                </div>
+
+                <!-- Recommendations & Crop Matching -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Suitable Crops Section -->
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <h3 class="font-bold text-slate-900 dark:text-white mb-2 flex items-center space-x-2">
+                            <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i>
+                            <span>Crop Suitability Engine</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mb-4">Calculated based on agronomic requirements (NPK, pH tolerance, rainfall needs).</p>
+
+                        <div id="cropCardsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- Dynamic crop cards rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Customized Fertilizer Advice -->
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <h3 class="font-bold text-slate-900 dark:text-white mb-3 flex items-center space-x-2">
+                            <i data-lucide="sparkles" class="w-5 h-5 text-amber-500"></i>
+                            <span>AI Soil Amendment Recommendation</span>
+                        </h3>
+                        <div id="fertilizerAdvice" class="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-700 text-sm space-y-2">
+                            <!-- Dynamic advice populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 3: IOT TELEMETRY SIMULATOR ================= -->
+        <section id="telemetry" class="tab-content space-y-6">
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <!-- Control Header -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-700">
+                    <div>
+                        <h3 class="font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                            <i data-lucide="activity" class="w-5 h-5 text-brand-500"></i>
+                            <span>Real-Time Sensor Telemetry Stream</span>
+                        </h3>
+                        <p class="text-xs text-slate-500">Simulate incoming IoT wireless sensor payloads (Soil moisture, Temp, NPK sensors).</p>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <button id="toggleSimBtn" onclick="toggleTelemetrySimulation()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium text-xs rounded-xl flex items-center space-x-2 shadow-sm transition">
+                            <i data-lucide="pause" id="simIcon" class="w-4 h-4"></i>
+                            <span id="simBtnText">Pause Simulator</span>
+                        </button>
+                        <select id="simSpeed" class="bg-slate-100 dark:bg-slate-700 text-xs rounded-xl px-3 py-2 border-0 font-medium" onchange="changeSimSpeed()">
+                            <option value="1000">Speed: Fast (1s)</option>
+                            <option value="2500" selected>Speed: Normal (2.5s)</option>
+                            <option value="5000">Speed: Slow (5s)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Live Graph -->
+                <div class="mt-6">
+                    <div class="h-72">
+                        <canvas id="telemetryChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Raw JSON Telemetry Log Stream -->
+                <div class="mt-6">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center space-x-1">
+                        <i data-lucide="terminal" class="w-4 h-4"></i>
+                        <span>Live Payload Stream Output Log</span>
+                    </h4>
+                    <div id="telemetryLog" class="bg-slate-950 text-emerald-400 font-mono text-xs p-4 rounded-xl h-36 overflow-y-auto space-y-1 border border-slate-800">
+                        <!-- Log messages injected dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 4: WEATHER & IRRIGATION ================= -->
+        <section id="weather" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Weather Forecast Cards -->
+                <div class="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+                        <h3 class="font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                            <i data-lucide="cloud-sun" class="w-5 h-5 text-amber-500"></i>
+                            <span>5-Day Local Agro-Weather Forecast</span>
+                        </h3>
+                        <span class="text-xs text-slate-400">Station: GreenValley-North</span>
+                    </div>
+
+                    <div id="weatherForecastGrid" class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        <!-- Dynamically populated 5 day forecast -->
+                    </div>
+                </div>
+
+                <!-- Evapotranspiration & Irrigation Calculator -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                        <i data-lucide="calculator" class="w-5 h-5 text-blue-500"></i>
+                        <span>ET₀ Irrigation Calculator</span>
+                    </h3>
+                    <p class="text-xs text-slate-500">Computes reference Evapotranspiration using modified Hargreaves equation.</p>
+
+                    <div class="space-y-3 pt-2">
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Field Size (Hectares):</label>
+                            <input type="number" id="etFieldSize" value="2.5" step="0.5" class="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-medium" oninput="calculateIrrigation()">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Current Soil Depletion (%):</label>
+                            <input type="number" id="etDepletion" value="35" min="0" max="100" class="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-medium" oninput="calculateIrrigation()">
+                        </div>
+
+                        <!-- Result display -->
+                        <div class="p-4 bg-blue-50 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-900 space-y-1">
+                            <div class="flex justify-between text-xs text-blue-900 dark:text-blue-200 font-semibold">
+                                <span>Est. ET₀ Loss:</span>
+                                <span id="etResultVal">4.8 mm/day</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-blue-900 dark:text-blue-200 font-semibold">
+                                <span>Recommended Water:</span>
+                                <span id="waterVolVal">12,000 L</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-blue-900 dark:text-blue-200 font-semibold">
+                                <span>Run Duration (Drip):</span>
+                                <span id="dripTimeVal">2.4 Hours</span>
+                            </div>
+                        </div>
+
+                        <!-- Manual Actuation Switch -->
+                        <div class="pt-2">
+                            <button id="mainValveBtn" onclick="toggleValve()" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition shadow flex items-center justify-center space-x-2">
+                                <i data-lucide="power" class="w-4 h-4"></i>
+                                <span id="mainValveText">START IRRIGATION PUMP</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 5: AI PEST & DISEASE DIAGNOSTIC ================= -->
+        <section id="diagnostic" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Dropzone & Sample Picker -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                        <i data-lucide="scan" class="w-5 h-5 text-brand-500"></i>
+                        <span>Crop Leaf Symptom Scanner</span>
+                    </h3>
+                    <p class="text-xs text-slate-500">Upload or select a field sample image for computer-vision disease diagnosis.</p>
+
+                    <!-- Interactive Upload / Sample Box -->
+                    <div class="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-2xl p-6 text-center hover:border-brand-500 dark:hover:border-brand-400 transition cursor-pointer relative bg-slate-50 dark:bg-slate-900/40">
+                        <input type="file" id="pestImageInput" class="hidden" accept="image/*" onchange="handlePestImageUpload(event)">
+                        <label for="pestImageInput" class="cursor-pointer space-y-2 block">
+                            <div class="mx-auto w-12 h-12 rounded-full bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center text-brand-600 dark:text-brand-400">
+                                <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                            </div>
+                            <div class="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                Click to upload photo or drop leaf sample here
+                            </div>
+                            <p class="text-[10px] text-slate-400">PNG, JPG, WEBP up to 10MB</p>
+                        </label>
+                    </div>
+
+                    <!-- Preset Samples for Instant Testing -->
+                    <div>
+                        <span class="text-xs font-semibold text-slate-500 block mb-2">Or select test sample:</span>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="runSampleDiagnostic('blight')" class="p-2 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-medium text-left flex flex-col items-center">
+                                <span class="text-lg">🍂</span>
+                                <span class="mt-1 text-[11px] text-slate-600 dark:text-slate-300">Tomato Blight</span>
+                            </button>
+                            <button onclick="runSampleDiagnostic('rust')" class="p-2 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-medium text-left flex flex-col items-center">
+                                <span class="text-lg">🌾</span>
+                                <span class="mt-1 text-[11px] text-slate-600 dark:text-slate-300">Wheat Rust</span>
+                            </button>
+                            <button onclick="runSampleDiagnostic('healthy')" class="p-2 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-medium text-left flex flex-col items-center">
+                                <span class="text-lg">🍃</span>
+                                <span class="mt-1 text-[11px] text-slate-600 dark:text-slate-300">Healthy Maize</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scan Results Panel -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3 mb-4">
+                            <h3 class="font-bold text-slate-900 dark:text-white">Diagnostic Findings</h3>
+                            <span id="diagnosticStatus" class="px-2.5 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-600">Awaiting Input</span>
+                        </div>
+
+                        <!-- Diagnostic Output Content -->
+                        <div id="diagnosticResults" class="space-y-4">
+                            <div class="text-center py-8 text-slate-400">
+                                <i data-lucide="microscope" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                                <p class="text-xs">Upload an image or pick a sample to view automated AI diagnosis.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 6: LOGBOOK & FINANCIAL CALCULATOR ================= -->
+        <section id="financials" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Log Entry Form -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                        <i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i>
+                        <span>Add Entry / Transaction</span>
+                    </h3>
+
+                    <form id="financeForm" onsubmit="addFinanceRecord(event)" class="space-y-3">
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Entry Type:</label>
+                            <select id="finType" class="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-medium">
+                                <option value="expense">Expense (Seeds, Fertilizer, Water, Fuel)</option>
+                                <option value="revenue">Revenue (Crop Sale, Subsidy)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Description:</label>
+                            <input type="text" id="finDesc" placeholder="e.g. Purchased Urea Fertilizer" required class="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs">
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Amount ($):</label>
+                            <input type="number" id="finAmount" step="0.01" min="0" placeholder="0.00" required class="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs">
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Category:</label>
+                            <select id="finCategory" class="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs">
+                                <option value="Supplies">Supplies & Fertiliziers</option>
+                                <option value="Irrigation">Irrigation & Power</option>
+                                <option value="Labor">Labor & Operations</option>
+                                <option value="Harvest Sale">Harvest Yield Sale</option>
+                                <option value="Other">Other Expenses</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl transition shadow">
+                            Save Log Record
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Summary Cards & Ledger -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Financial Summary Cards -->
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                            <span class="text-xs font-semibold text-slate-400">Total Income</span>
+                            <div class="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1" id="totalRevDisplay">$0.00</div>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                            <span class="text-xs font-semibold text-slate-400">Total Expenses</span>
+                            <div class="text-xl font-bold text-rose-600 dark:text-rose-400 mt-1" id="totalExpDisplay">$0.00</div>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                            <span class="text-xs font-semibold text-slate-400">Net Profit</span>
+                            <div class="text-xl font-bold text-slate-900 dark:text-white mt-1" id="netProfitDisplay">$0.00</div>
+                        </div>
+                    </div>
+
+                    <!-- Ledger Table -->
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-slate-900 dark:text-white">Farm Ledger Log</h3>
+                            <button onclick="exportFinanceCSV()" class="text-xs font-semibold text-brand-600 dark:text-brand-400 flex items-center space-x-1 hover:underline">
+                                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                <span>Export CSV</span>
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="border-b border-slate-200 dark:border-slate-700 text-slate-400">
+                                        <th class="pb-2">Date</th>
+                                        <th class="pb-2">Type</th>
+                                        <th class="pb-2">Description</th>
+                                        <th class="pb-2">Category</th>
+                                        <th class="pb-2 text-right">Amount</th>
+                                        <th class="pb-2 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ledgerTableBody" class="divide-y divide-slate-100 dark:divide-slate-700">
+                                    <!-- Dynamic Ledger Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Application Logic Scripts -->
+    <script>
+        /* ================= STATE MANAGEMENT ================= */
+        const APP_STATE = {
+            theme: localStorage.getItem('agri_theme') || 'light',
+            activeTab: 'dashboard',
+            telemetryRunning: true,
+            telemetrySpeed: 2500,
+            simInterval: null,
+            telemetryData: {
+                labels: [],
+                moisture: [],
+                temp: []
+            },
+            valveActive: false,
+            records: JSON.parse(localStorage.getItem('agri_records')) || [
+                { id: 1, date: '2026-10-01', type: 'expense', desc: 'NPK Compound Fertilizer', category: 'Supplies', amount: 350.00 },
+                { id: 2, date: '2026-10-02', type: 'revenue', desc: 'Wheat Crop Advance Payment', category: 'Harvest Sale', amount: 1200.00 }
+            ]
+        };
+
+        // Crop agronomic requirements dataset
+        const CROPS_DATABASE = [
+            { name: 'Wheat', minN: 100, maxN: 180, minP: 30, maxP: 70, minK: 40, maxK: 90, minPH: 6.0, maxPH: 7.5, minRain: 400, maxRain: 900, icon: '🌾' },
+            { name: 'Rice', minN: 120, maxN: 200, minP: 40, maxP: 80, minK: 50, maxK: 100, minPH: 5.5, maxPH: 7.0, minRain: 1000, maxRain: 2000, icon: '🌾' },
+            { name: 'Maize / Corn', minN: 110, maxN: 190, minP: 35, maxP: 75, minK: 50, maxK: 110, minPH: 5.8, maxPH: 7.2, minRain: 500, maxRain: 1100, icon: '🌽' },
+            { name: 'Cotton', minN: 90, maxN: 160, minP: 25, maxP: 60, minK: 40, maxK: 80, minPH: 6.0, maxPH: 8.0, minRain: 500, maxRain: 1000, icon: '☁️' },
+            { name: 'Tomato', minN: 80, maxN: 150, minP: 40, maxP: 90, minK: 60, maxK: 140, minPH: 6.0, maxPH: 6.8, minRain: 400, maxRain: 800, icon: '🍅' },
+            { name: 'Potato', minN: 90, maxN: 160, minP: 50, maxP: 100, minK: 80, maxK: 160, minPH: 5.0, maxPH: 6.5, minRain: 500, maxRain: 900, icon: '🥔' }
+        ];
+
+        let overviewChartInstance = null;
+        let telemetryChartInstance = null;
+
+        /* ================= INITIALIZATION ================= */
+        window.onload = function() {
+            lucide.createIcons();
+            initTheme();
+            startClock();
+            initCharts();
+            updateCropAdvisory();
+            startTelemetrySimulation();
+            renderWeatherForecast();
+            calculateIrrigation();
+            renderLedger();
+
+            // Setup theme toggle button
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+        };
+
+        /* ================= NAVIGATION & THEME ================= */
+        function switchTab(tabId) {
+            APP_STATE.activeTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(el => {
+                el.classList.remove('text-brand-600', 'dark:text-brand-400', 'bg-brand-50', 'dark:bg-brand-950/40');
+                el.classList.add('text-slate-600', 'dark:text-slate-400');
+            });
+
+            document.getElementById(tabId).classList.add('active');
+            const targetBtn = document.getElementById(`tab-${tabId}`);
+            if (targetBtn) {
+                targetBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
+                targetBtn.classList.add('text-brand-600', 'dark:text-brand-400', 'bg-brand-50', 'dark:bg-brand-950/40');
+            }
+        }
+
+        function initTheme() {
+            if (APP_STATE.theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        function toggleTheme() {
+            APP_STATE.theme = APP_STATE.theme === 'light' ? 'dark' : 'light';
+            localStorage.setItem('agri_theme', APP_STATE.theme);
+            initTheme();
+        }
+
+        function startClock() {
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('liveClock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            }, 1000);
+        }
+
+        /* ================= CHARTS & TELEMETRY ================= */
+        function initCharts() {
+            // Seed initial telemetry data points
+            const now = new Date();
+            for (let i = 10; i >= 0; i--) {
+                const t = new Date(now.getTime() - i * 60000);
+                APP_STATE.telemetryData.labels.push(t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+                APP_STATE.telemetryData.moisture.push(Math.floor(40 + Math.random() * 6));
+                APP_STATE.telemetryData.temp.push(Number((25 + Math.random() * 2).toFixed(1)));
+            }
+
+            // Overview Chart
+            const ctx1 = document.getElementById('overviewChart').getContext('2d');
+            overviewChartInstance = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: APP_STATE.telemetryData.labels,
+                    datasets: [
+                        {
+                            label: 'Soil Moisture (%)',
+                            data: APP_STATE.telemetryData.moisture,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Ambient Temp (°C)',
+                            data: APP_STATE.telemetryData.temp,
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'transparent',
+                            borderDash: [5, 5],
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+
+            // Telemetry Simulator Dedicated Chart
+            const ctx2 = document.getElementById('telemetryChart').getContext('2d');
+            telemetryChartInstance = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: APP_STATE.telemetryData.labels,
+                    datasets: [
+                        {
+                            label: 'Soil Moisture Level (%)',
+                            data: APP_STATE.telemetryData.moisture,
+                            borderColor: '#22c55e',
+                            backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { min: 20, max: 80 } }
+                }
+            });
+        }
+
+        function startTelemetrySimulation() {
+            if (APP_STATE.simInterval) clearInterval(APP_STATE.simInterval);
+            APP_STATE.simInterval = setInterval(updateTelemetryTick, APP_STATE.telemetrySpeed);
+        }
+
+        function toggleTelemetrySimulation() {
+            APP_STATE.telemetryRunning = !APP_STATE.telemetryRunning;
+            const btnText = document.getElementById('simBtnText');
+            const icon = document.getElementById('simIcon');
+
+            if (APP_STATE.telemetryRunning) {
+                startTelemetrySimulation();
+                btnText.innerText = "Pause Simulator";
+                icon.setAttribute('data-lucide', 'pause');
+            } else {
+                clearInterval(APP_STATE.simInterval);
+                btnText.innerText = "Resume Simulator";
+                icon.setAttribute('data-lucide', 'play');
+            }
+            lucide.createIcons();
+        }
+
+        function changeSimSpeed() {
+            APP_STATE.telemetrySpeed = parseInt(document.getElementById('simSpeed').value);
+            if (APP_STATE.telemetryRunning) startTelemetrySimulation();
+        }
+
+        function updateTelemetryTick() {
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            // Generate simulated sensor noise
+            const lastMoisture = APP_STATE.telemetryData.moisture[APP_STATE.telemetryData.moisture.length - 1];
+            const delta = (Math.random() - 0.48) * 2;
+            const newMoisture = Math.max(25, Math.min(75, Number((lastMoisture + delta).toFixed(1))));
+            const newTemp = Number((24 + Math.random() * 4).toFixed(1));
+
+            // Shift arrays
+            APP_STATE.telemetryData.labels.push(timeStr);
+            APP_STATE.telemetryData.moisture.push(newMoisture);
+            APP_STATE.telemetryData.temp.push(newTemp);
+
+            if (APP_STATE.telemetryData.labels.length > 15) {
+                APP_STATE.telemetryData.labels.shift();
+                APP_STATE.telemetryData.moisture.shift();
+                APP_STATE.telemetryData.temp.shift();
+            }
+
+            // Update UI widgets
+            document.getElementById('dashMoisture').innerText = newMoisture + '%';
+            document.getElementById('dashTemp').innerText = newTemp + '°C';
+
+            // Refresh charts
+            overviewChartInstance.update();
+            telemetryChartInstance.update();
+
+            // Append raw telemetry payload log
+            const logContainer = document.getElementById('telemetryLog');
+            const logItem = document.createElement('div');
+            logItem.innerText = `[${timeStr}] PAYLOAD OK: { "node_id": "SN-8821", "moisture": ${newMoisture}%, "temp": ${newTemp}°C, "rssi": -68dBm }`;
+            logContainer.prepend(logItem);
+        }
+
+        /* ================= SOIL & CROP ADVISORY ENGINE ================= */
+        function updateCropAdvisory() {
+            const n = parseInt(document.getElementById('inputN').value);
+            const p = parseInt(document.getElementById('inputP').value);
+            const k = parseInt(document.getElementById('inputK').value);
+            const ph = parseFloat(document.getElementById('inputPH').value);
+            const rain = parseInt(document.getElementById('inputRain').value);
+
+            // Update slider readout values
+            document.getElementById('valN').innerText = n;
+            document.getElementById('valP').innerText = p;
+            document.getElementById('valK').innerText = k;
+            document.getElementById('valPH').innerText = ph.toFixed(1);
+            document.getElementById('valRain').innerText = rain;
+
+            // Render matching crops
+            const container = document.getElementById('cropCardsContainer');
+            container.innerHTML = '';
+
+            CROPS_DATABASE.forEach(crop => {
+                // Calculate match score
+                let score = 100;
+                if (n < crop.minN || n > crop.maxN) score -= 15;
+                if (p < crop.minP || p > crop.maxP) score -= 15;
+                if (k < crop.minK || k > crop.maxK) score -= 15;
+                if (ph < crop.minPH || ph > crop.maxPH) score -= 25;
+                if (rain < crop.minRain || rain > crop.maxRain) score -= 20;
+
+                score = Math.max(10, score);
+
+                let badgeClass = score >= 80 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' :
+                                 score >= 50 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' :
+                                 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300';
+
+                const card = `
+                    <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-2xl">${crop.icon}</span>
+                                <span class="text-xs font-bold px-2 py-0.5 rounded-full ${badgeClass}">${score}% Match</span>
+                            </div>
+                            <h4 class="font-bold text-sm text-slate-900 dark:text-white">${crop.name}</h4>
+                            <p class="text-[11px] text-slate-500 mt-1">Ideal pH: ${crop.minPH}-${crop.maxPH} | Rain: ${crop.minRain}mm</p>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += card;
+            });
+
+            // Dynamic Fertilizer Recommendation
+            const fertBox = document.getElementById('fertilizerAdvice');
+            let fertText = `<p class="text-slate-700 dark:text-slate-300"><strong>Field Assessment:</strong> </p>`;
+
+            if (n < 100) {
+                fertText += `<p class="text-xs text-amber-600 dark:text-amber-400">⚠️ Low Nitrogen. Apply <strong>Urea (46% N)</strong> at 50 kg/hectare or organic compost top-dressing.</p>`;
+            } else {
+                fertText += `<p class="text-xs text-emerald-600 dark:text-emerald-400">✅ Nitrogen levels are adequate for vegetative growth.</p>`;
+            }
+
+            if (ph < 6.0) {
+                fertText += `<p class="text-xs text-amber-600 dark:text-amber-400">⚠️ Acidic soil. Consider applying <strong>Agricultural Lime (Calcium Carbonate)</strong> to raise pH.</p>`;
+            } else if (ph > 7.5) {
+                fertText += `<p class="text-xs text-amber-600 dark:text-amber-400">⚠️ Alkaline soil. Add <strong>Elemental Sulfur</strong> or organic peat to lower pH.</p>`;
+            }
+
+            fertBox.innerHTML = fertText;
+        }
+
+        /* ================= WEATHER & IRRIGATION CALCULATOR ================= */
+        function renderWeatherForecast() {
+            const days = ['Today', 'Tomorrow', 'Wed', 'Thu', 'Fri'];
+            const icons = ['sun', 'cloud-sun', 'cloud-rain', 'sun', 'cloud-lightning'];
+            const temps = ['28°C', '26°C', '22°C', '27°C', '24°C'];
+            const grid = document.getElementById('weatherForecastGrid');
+            grid.innerHTML = '';
+
+            days.forEach((day, idx) => {
+                grid.innerHTML += `
+                    <div class="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-700 text-center flex flex-col items-center">
+                        <span class="text-xs font-semibold text-slate-500">${day}</span>
+                        <i data-lucide="${icons[idx]}" class="w-6 h-6 my-2 text-brand-500"></i>
+                        <span class="text-sm font-bold text-slate-800 dark:text-slate-200">${temps[idx]}</span>
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function calculateIrrigation() {
+            const hectares = parseFloat(document.getElementById('etFieldSize').value) || 1;
+            const depletion = parseFloat(document.getElementById('etDepletion').value) || 30;
+
+            const baseET = 4.8; // mm/day reference
+            const waterNeededLiters = Math.round(hectares * depletion * baseET * 100);
+            const hoursNeeded = (waterNeededLiters / 5000).toFixed(1);
+
+            document.getElementById('etResultVal').innerText = `${baseET} mm/day`;
+            document.getElementById('waterVolVal').innerText = `${waterNeededLiters.toLocaleString()} Liters`;
+            document.getElementById('dripTimeVal').innerText = `${hoursNeeded} Hours`;
+        }
+
+        function toggleValve() {
+            APP_STATE.valveActive = !APP_STATE.valveActive;
+            const badge = document.getElementById('dashValveBadge');
+            const btnText = document.getElementById('mainValveText');
+
+            if (APP_STATE.valveActive) {
+                badge.innerText = "RUNNING";
+                badge.className = "px-2 py-0.5 text-xs font-bold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 animate-pulse";
+                if (btnText) btnText.innerText = "STOP IRRIGATION PUMP";
+            } else {
+                badge.innerText = "OFF";
+                badge.className = "px-2 py-0.5 text-xs font-bold rounded-full bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300";
+                if (btnText) btnText.innerText = "START IRRIGATION PUMP";
+            }
+        }
+
+        /* ================= AI PEST DIAGNOSTIC SIMULATOR ================= */
+        function handlePestImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                runSampleDiagnostic('blight'); // Simulating computer vision diagnostic on upload
+            }
+        }
+
+        function runSampleDiagnostic(type) {
+            const resultsBox = document.getElementById('diagnosticResults');
+            const statusBadge = document.getElementById('diagnosticStatus');
+
+            statusBadge.innerText = "Analysis Complete";
+            statusBadge.className = "px-2.5 py-1 text-xs font-bold rounded-full bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300";
+
+            if (type === 'blight') {
+                resultsBox.innerHTML = `
+                    <div class="p-4 bg-rose-50 dark:bg-rose-950/30 border-l-4 border-rose-500 rounded-r-xl space-y-2">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-rose-900 dark:text-rose-200">Late Blight (Phytophthora infestans)</h4>
+                            <span class="text-xs font-bold bg-rose-200 dark:bg-rose-900 text-rose-800 dark:text-rose-200 px-2 py-0.5 rounded">94% Confidence</span>
+                        </div>
+                        <p class="text-xs text-rose-700 dark:text-rose-300">Fungal pathogen causing dark water-soaked lesions on leaves and stems.</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <h5 class="text-xs font-bold uppercase tracking-wider text-slate-500">Recommended Organic Treatment</h5>
+                        <p class="text-xs text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">Apply Copper-based bio-fungicide or Neem oil solution every 7 days. Ensure foliage drying.</p>
+
+                        <h5 class="text-xs font-bold uppercase tracking-wider text-slate-500">Targeted Chemical Remediation</h5>
+                        <p class="text-xs text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">Foliar spray with Mancozeb or Chlorothalonil fungicide formulation.</p>
+                    </div>
+                `;
+            } else if (type === 'rust') {
+                resultsBox.innerHTML = `
+                    <div class="p-4 bg-amber-50 dark:bg-amber-950/30 border-l-4 border-amber-500 rounded-r-xl space-y-2">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-amber-900 dark:text-amber-200">Puccinia Rust Fungus</h4>
+                            <span class="text-xs font-bold bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 px-2 py-0.5 rounded">89% Confidence</span>
+                        </div>
+                        <p class="text-xs text-amber-700 dark:text-amber-300">Orange-brown pustules found on upper leaf surface causing leaf necrosis.</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <h5 class="text-xs font-bold uppercase tracking-wider text-slate-500">Recommended Action Plan</h5>
+                        <p class="text-xs text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">Rotate crops and apply Propiconazole systemic fungicide early morning.</p>
+                    </div>
+                `;
+            } else {
+                resultsBox.innerHTML = `
+                    <div class="p-4 bg-emerald-50 dark:bg-emerald-950/30 border-l-4 border-emerald-500 rounded-r-xl space-y-2">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-emerald-900 dark:text-emerald-200">Healthy Leaf Foliage</h4>
+                            <span class="text-xs font-bold bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 px-2 py-0.5 rounded">98% Confidence</span>
+                        </div>
+                        <p class="text-xs text-emerald-700 dark:text-emerald-300">No active fungal, bacterial, or pest infestation detected.</p>
+                    </div>
+                `;
+            }
+        }
+
+        /* ================= FINANCIAL CALCULATOR & LEDGER ================= */
+        function addFinanceRecord(e) {
+            e.preventDefault();
+            const type = document.getElementById('finType').value;
+            const desc = document.getElementById('finDesc').value;
+            const amount = parseFloat(document.getElementById('finAmount').value);
+            const category = document.getElementById('finCategory').value;
+
+            const record = {
+                id: Date.now(),
+                date: new Date().toISOString().split('T')[0],
+                type,
+                desc,
+                category,
+                amount
+            };
+
+            APP_STATE.records.push(record);
+            localStorage.setItem('agri_records', JSON.stringify(APP_STATE.records));
+            
+            document.getElementById('financeForm').reset();
+            renderLedger();
+        }
+
+        function deleteRecord(id) {
+            APP_STATE.records = APP_STATE.records.filter(r => r.id !== id);
+            localStorage.setItem('agri_records', JSON.stringify(APP_STATE.records));
+            renderLedger();
+        }
+
+        function renderLedger() {
+            const tbody = document.getElementById('ledgerTableBody');
+            tbody.innerHTML = '';
+
+            let totalRev = 0;
+            let totalExp = 0;
+
+            APP_STATE.records.forEach(r => {
+                if (r.type === 'revenue') totalRev += r.amount;
+                else totalExp += r.amount;
+
+                const row = document.createElement('tr');
+                row.className = "hover:bg-slate-50 dark:hover:bg-slate-700/30 transition";
+                row.innerHTML = `
+                    <td class="py-2.5 font-medium text-slate-500">${r.date}</td>
+                    <td class="py-2.5">
+                        <span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${r.type === 'revenue' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'}">
+                            ${r.type.toUpperCase()}
+                        </span>
+                    </td>
+                    <td class="py-2.5 font-medium text-slate-800 dark:text-slate-200">${r.desc}</td>
+                    <td class="py-2.5 text-slate-500">${r.category}</td>
+                    <td class="py-2.5 text-right font-bold ${r.type === 'revenue' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">
+                        ${r.type === 'revenue' ? '+' : '-'}$${r.amount.toFixed(2)}
+                    </td>
+                    <td class="py-2.5 text-right">
+                        <button onclick="deleteRecord(${r.id})" class="text-slate-400 hover:text-rose-500 transition">
+                            <i data-lucide="trash-2" class="w-4 h-4 inline"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('totalRevDisplay').innerText = `$${totalRev.toFixed(2)}`;
+            document.getElementById('totalExpDisplay').innerText = `$${totalExp.toFixed(2)}`;
+            
+            const net = totalRev - totalExp;
+            const netDisplay = document.getElementById('netProfitDisplay');
+            netDisplay.innerText = `$${net.toFixed(2)}`;
+            netDisplay.className = `text-xl font-bold mt-1 ${net >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`;
+
+            lucide.createIcons();
+        }
+
+        function exportFinanceCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,ID,Date,Type,Description,Category,Amount\n";
+            APP_STATE.records.forEach(r => {
+                csvContent += `${r.id},${r.date},${r.type},"${r.desc}",${r.category},${r.amount}\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "AgriSmart_Ledger_Export.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
